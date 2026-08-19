@@ -1,12 +1,12 @@
 # Frans Elstadt
 
-**Systems engineer** — C# / .NET, domain models, and operational backends.
+**Software Engineer** — C# / .NET, domain models, and operational backends.
 
 [Website](https://elstadt.com) · [GitHub](https://github.com/franselstadt) · [LinkedIn](https://linkedin.com/in/frans-elstadt) · [X](https://x.com/franselstadt) · [Email](mailto:franselstadt@gmail.com)
 
-I build software the way a domain works, not the way a framework wants to be used. The model is the product. Persistence, HTTP, brokers, and cloud SDKs are adapters. If the domain project can see Entity Framework, the design is already wrong.
+I am a backend and platform engineer. I design the domain model, the persistence, the APIs, and the deployment path, then stay with the system in production. The work is usually **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware — software that other teams, banks, or field operators depend on every day.
 
-The work is usually **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware. Those systems fail in the language of the business — an assessment, a wallet, a session, a settlement — so that is what the code is allowed to talk about.
+I build that software the way a domain works, not the way a framework wants to be used. The model is the product. Persistence, HTTP, brokers, and cloud SDKs are adapters. If the domain project can see Entity Framework, the design is already wrong.
 
 ---
 
