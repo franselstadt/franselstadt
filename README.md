@@ -4,74 +4,79 @@
 
 [Website](https://elstadt.com) · [GitHub](https://github.com/franselstadt) · [LinkedIn](https://linkedin.com/in/frans-elstadt) · [X](https://x.com/franselstadt) · [Email](mailto:franselstadt@gmail.com)
 
-I am a backend and platform engineer. I design the domain model, the persistence, the APIs, and the deployment path, then stay with the system in production. The work is usually **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware — software that other teams, banks, or field operators depend on every day.
+I am a software engineer.
 
-I write in **statically typed** languages — C#, Java, C++. Most engineers are fluent in a framework. A framework is a host with opinions. I am fluent in a model that still compiles when the host is gone.
+I specify the types a business is allowed to mean, the store those types persist in, the contracts other processes may call, and the path that code takes into a running machine. Then I remain responsible for it. The work is **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware. Other teams, banks, and field operators treat the result as ground truth. Ground truth does not get to be a framework tutorial.
+
+I write in **statically typed** languages — C#, Java, C++. Most engineers are fluent in a host. I am fluent in a kernel: types, ports, composition, and control flow that the compiler can see. If Domain can import a driver, an ORM, or a vendor SDK, it is not a kernel. It is a second Infrastructure that someone named Domain.
 
 ---
 
 ## Most engineers, this engineer
 
-The default career is to get fast at the stack of the year. Entities are rows. Services are transaction scripts. Architecture is the folder the tutorial used. SOLID is five slides. DDD is a repository named `Repository`. That ships. It also means the business language never becomes a type, so every new host is a rewrite dressed up as a migration.
+The default career is speed in the stack of the year. Entities are rows. Services are transaction scripts. Controllers catch exceptions. Architecture is the folder the tutorial used. SOLID is five slides. DDD is a class named `Repository`. That ships. It also means the business language never becomes a type, so every new host is a rewrite dressed as a migration.
 
-I start from the names the business already uses. A session, a ledger line, a shipment, a settlement — that is an **Item**. A set of them is a **Collection**. A query that is not that thing is a **ViewItem**. A workflow is a use case. Persistence, HTTP, the bus, the cloud: adapters. If Domain can import a driver, an ORM, or a vendor SDK, it is not Domain. It is a second Infrastructure that someone named Domain.
+I start from the names the business already uses. A session, a ledger line, a shipment, a settlement — an **Item**. A set of them — a **Collection**. A query that is not that thing — a **ViewItem**. A single business action — a **command**, one handler, one typed result. Expected failure — a **value**, not a stack unwind. History, where the law requires it — an **event stream**, not a last-write-wins row.
 
-The compiler is the design review. Substitutions that other codebases allow, this one refuses.
+The compiler is the design review. Substitutions other codebases allow, this one refuses.
 
 | Default engineer | This kernel |
 | --- | --- |
 | Starts from the framework | Starts from the type |
 | ORM entity = the domain | Item = the domain; the row is an adapter |
-| Controller opens a unit of work | Presentation calls a use case; the use case never sees a connection |
+| Controller opens a unit of work | Presentation calls a command; the handler never sees a connection |
+| One controller, twenty actions | **REPR** — one request, one handler, one response |
+| `throw` / `catch` for expected failure | **Result** — success or domain error, both types |
+| Nested `if` / `is` / visitor | **ADTs** — closed hierarchies, exhaustive match |
+| Last row wins | **Event stream** — the table is a projection |
 | `Repository` is a DAO with better branding | Persistence is a port **owned by Domain**, bound once |
-| DTO in the UI, row in the store, nothing the business can name | ViewItem in Domain — a query is a type, not a map |
+| DTO in the UI, row in the store | ViewItem in Domain — a query is a type, not a map |
 | Clean architecture = four folders that still import the ORM | Domain compiles with **zero** drivers |
 | SOLID as a slide deck | SOLID as a **failed build** |
 | Interface on every class | Small ports — a worklist reader does not take `Delete` |
-| One service, forty methods | One use case, one reason to change |
+| One service, forty methods | One command, one reason to change |
 | Microservices as the design | Types first; process topology is Infrastructure |
 | DI container as architecture | Composition root is **one assignment**; then the graph is closed |
-| Null persistence, catch it later | Uncomposed I/O **throws** |
-| New store: edit the model | New store: new Infrastructure |
+| Null persistence, catch it later | Uncomposed I/O **throws** — that is a bug, not a Result |
 | Anemic objects + logic in services | Item owns `Create Read Update Delete` |
-| Framework entity passed across layers | A persistence row is not a domain type |
 
-Most profiles list a stack. This one states the constraints the stack is not allowed to violate.
+Most profiles list a stack. This one states the constraints the stack is not allowed to violate. Most engineers have one control-flow primitive: throw. A kernel has two: a **bugcheck** and a **status**. Uncomposed I/O, broken invariants, impossible states — throw. Insufficient funds, duplicate session, unknown command — `Result`. Mixing them is how production becomes a stack trace with a business name in it.
 
 ---
 
 ## Architecture
 
-Presentation calls Application. Application orchestrates Domain. Domain has no I/O. Architecture composes the process once, at start. Infrastructure implements ports. Workers take the long jobs. Extensions are primitives, not a junk drawer.
+Presentation calls Application. Application is commands. Domain is types. Domain has no I/O. Architecture composes the process once, at start. Infrastructure implements ports. Workers take the long jobs.
 
 ```
 Presentation     host: HTTP, UI, services, jobs
       │
-Application      verbs — one use case, one reason to change
+Application      REPR — Request → handler → Result<Response>
       │
-Domain           Items, Collections, ViewItems, ports     ← no I/O
+Domain           Items, Collections, ViewItems, errors, events, ports
       │
 Architecture     composition root, session, process catalog
       │
-Infrastructure   store, bus, cloud, hardware
-Workers          reports, batches, side effects at the edge
+Infrastructure   store, bus, stream, cloud, hardware
+Workers          reports, batches, projections, side effects at the edge
 ```
 
 ```mermaid
 flowchart TB
-  UI[Presentation] --> APP[Application]
-  APP --> DOM[Domain]
-  DOM --> PORTS[Persistence ports]
+  UI[Presentation] --> REQ[Request]
+  REQ --> H[Command handler]
+  H --> DOM[Domain]
+  DOM --> R[Result]
+  R --> UI
+  DOM --> PORTS[Ports]
   INF[Infrastructure] --> PORTS
   CR[Composition root] -.->|binds once| PORTS
   CR --> INF
-  WRK[Workers] --> INF
-  UI -.-> HOST[Host]
+  ES[Event stream] --> INF
+  H -.-> ES
 ```
 
-The usual codebase inverts this in practice: Domain depends on the store, Application is a folder of wrappers, Architecture is unused, Infrastructure is wherever the connection landed. Dependencies here point inward. The only concrete assignment of store → port is the composition root. If that has not run, the process fails closed.
-
-Spring, ASP.NET, Qt, a socket server, a batch job — hosts. The host can change. The store can change. The bus can change. The domain does not.
+Dependencies point inward. The only concrete assignment of store → port is the composition root. If that has not run, the process fails closed. Spring, ASP.NET, Qt, a socket server, a batch job — hosts. The host can change. The domain does not.
 
 ---
 
@@ -85,44 +90,89 @@ Sets inherit `BaseCollection<T>` (generics in C# and Java, templates in C++):
 
 `CreateItems` / `ReadItems` / `UpdateItems` / `DeleteItems`.
 
-A ViewItem has no `Create()`. If it could inherit `BaseItem`, Liskov would already be broken. The compiler should refuse the substitution other engineers make with a mapper and a comment.
+A ViewItem has no `Create()`. If it could inherit `BaseItem`, Liskov is already broken. Other engineers paper over that with a mapper. The compiler should refuse it.
 
 ```
 Domain
   Items         BaseItem · Item · ViewItem · ItemPersistence
   Collections   BaseCollection<T> · ItemCollection<T> · CollectionPersistence
+  Results       Result<T> · Error                        closed set of failures
+  Events        Event · EventStream                      history as types
+  Commands      Request · Handler · Response             one action
 ```
 
-The Item calls `Create()`. It does not know SQL, a procedure, a test double, or another process. Domain owns the port. Infrastructure implements it. The composition root assigns it. Application is verbs. The host calls use cases. Use cases call types. Nothing below Presentation knows there is a UI. Nothing above Infrastructure knows there is a connection.
+The Item calls `Create()`. It does not know SQL, a procedure, a test double, or another process. Domain owns the port. Infrastructure implements it. The composition root assigns it.
 
 ---
 
-## SOLID, as shipped — not as recited
+## Result — failure is a type
+
+Expected failure is not exceptional. It is data.
+
+A handler returns `Result<T>`: a success value, or a domain error. Both are types. The caller must match. There is no hidden `catch` three frames up that turns a business rule into a 500. There is no stack walk for “this invoice cannot settle.” Exceptions exist for what the type system cannot name: broken invariants, uncomposed persistence, I/O the process cannot continue through.
+
+That is an explicit contract. It is also cheaper: a status object is not a stack trace. In C# this is a discriminated union and a switch expression. In Java, sealed types. In C++, `std::expected` or a variant. Same idea. The default engineer throws because the language made it easy. I return a Result because the domain made it required.
+
+---
+
+## Command — one request, one handler, one response
+
+A controller with twenty actions is a folder that learned HTTP. I use **REPR**: Request, Endpoint (handler), Response.
+
+Each business action is an immutable request. The handler is a dedicated type — one class, or one function — that takes that request and returns `Result<Response>`. Inputs in, result out. Side effects live behind ports, composed before the handler runs, never constructed inside it. Tests pass a request. They do not stand up a host.
+
+Single responsibility is mechanical here: a new action is a new handler, not a new method on a god object. The pipeline (auth, session, logging) is middleware around a function, not a base controller that every action inherits by accident.
+
+---
+
+## Algebraic types — exhaustiveness is the review
+
+Domain states and domain errors are **closed**. Paid, pending, reversed. Insufficient funds, duplicate, not found. Not a string. Not an `int` code. A sum type.
+
+Pattern matching replaces the visitor and the nested `is`. The compiler proves every arm exists. A new error that nobody handled is a failed build, not a silent default. List and sequence patterns belong in the same family: inspect a stream of events by shape, not by index and hope.
+
+A ViewItem is this idea applied to reads. An Error is this idea applied to failure. An Event is this idea applied to time. Other engineers simulate it with enums and comments. I let the type system close the set.
+
+---
+
+## Event sourcing — history is the store
+
+Where the law, the ledger, or the operator needs to know *what happened*, the source of truth is not the last row. It is an immutable sequence of events. The current table is a **projection** — a ViewItem rebuilt from the log. Append-only. Chronological. Auditable by construction.
+
+The stream is enumerated asynchronously: C# `IAsyncEnumerable<T>`, Java reactive flow, C++ coroutines. Same contract — pull state transitions without loading the world into a list. Workers project. Handlers append. Domain names the event. Infrastructure stores the bytes.
+
+Not every Item is an event-sourced aggregate. A named thing with a lifecycle is still an Item. When the invariant is history, the Item’s memory is the stream. Default engineers update in place and write an audit table afterwards. That is two sources of truth. I keep one.
+
+---
+
+## SOLID, as shipped
 
 Other engineers can name the five letters. I care whether they fail the build.
 
-**Single responsibility.** An Item changes when the business concept changes. A use case changes when the workflow changes. An adapter changes when the store, bus, or host changes. A class that changes for all three is the default engineer’s “service layer.”
+**Single responsibility.** An Item changes when the concept changes. A handler changes when the action changes. An adapter changes when the store changes. A Result error changes when the domain learns a new failure. A class that changes for all of those is a “service.”
 
-**Open/closed.** New store, new Infrastructure. Domain is not edited to add a database. Application is not edited to add a transport. A `switch` on vendor inside a use case is the closed-for-extension pattern dressed as pragmatism.
+**Open/closed.** New store, new Infrastructure. New command, new handler. New event, new arm in the match — and a failed build until it exists. Domain is not edited to add a driver.
 
-**Liskov.** A ViewItem is not an Item. A bag of rows is not a Collection of Items. Inheritance is a contract. If `Delete` would throw `NotSupportedException`, you modeled a query as an entity — the most common clever-looking mistake in typed codebases.
+**Liskov.** A ViewItem is not an Item. A Result error is not an exception. A projection is not an event. If `Delete` would throw `NotSupported`, you modeled a query as an entity.
 
-**Interface segregation.** One-item persistence is not collection persistence. Callers take the port they use. A fat unit-of-work in Domain is Infrastructure that leaked upward and asked to be called architecture.
+**Interface segregation.** Item persistence is not collection persistence. A reader of a worklist does not take `Delete`. A handler that cannot fail does not return a swamp of errors it never produces.
 
-**Dependency inversion.** Domain defines abstractions. Infrastructure depends on Domain. Never the reverse. Construction of I/O does not happen down the call stack and does not happen lazily inside an Item. If Domain cannot compile without a framework or a driver on the classpath, include path, or package graph — you inverted the slide, not the dependency.
+**Dependency inversion.** Domain defines ports. Infrastructure depends on Domain. The composition root is the one concrete assignment. If Domain cannot compile without a framework or a driver on the classpath, include path, or package graph — you inverted the slide, not the dependency.
 
 ---
 
 ## Constraints
 
-- **Types first.** Classes and interfaces. Dynamic maps, untyped payloads, and framework entities are not a domain.
+- **Types first.** Classes, interfaces, closed hierarchies. Maps, untyped payloads, and framework entities are not a domain.
+- **Result for expected failure. Throw for bugs.** Never the reverse.
+- **One request, one handler, one response.** Two actions, two handlers.
+- **Closed sets.** States, errors, events — exhaustive match. No default arm that swallows tomorrow.
 - **Compose once.** Bound at process start. Then the graph is closed.
 - **Fail closed.** Silent null persistence is an incident queued on the first real traffic.
-- **Name it or it is not an Item.** A join is a ViewItem.
-- **One use case, one entry.** Two workflows, two methods — not a god object with a framework annotation.
-- **Buses behind ports.** The broker is an implementation. Swap it without touching a use case.
-- **Queries stay in Infrastructure.** Hot paths are still written and tuned. Domain does not hide that work and does not perform it.
-- **Workers own side effects that are not the model.** Reports, batches, device I/O — never methods on an Item.
-- **Explicit over implicit.** Explicit types, explicit visibility, no hidden I/O, no ambient context except session, and session is composed.
+- **Name it or it is not an Item.** A join is a ViewItem. A what-happened is an Event.
+- **One history.** If you event-source, the row is a projection. Do not keep a second truth.
+- **Queries and streams stay in Infrastructure.** Hot paths are still written and tuned. Domain does not perform them.
+- **Workers own side effects that are not the model.** Reports, projections, device I/O — never methods on an Item.
+- **Explicit over implicit.** Explicit types, explicit visibility, no hidden I/O, no ambient catch.
 
-Same kernel in C#, Java, or C++. Same kernel in any host. The adapters change. The domain does not. That is the difference: most engineers replace the model when they replace the framework. I replace the adapter.
+Same kernel in C#, Java, or C++. Same kernel in any host. The adapters change. The domain does not. Most engineers replace the model when they replace the framework. I replace the adapter.
