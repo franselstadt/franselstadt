@@ -129,21 +129,6 @@ Same kernel whether the host is Web Forms, Azure Functions, or a .NET 10 API. Th
 
 ---
 
-## Where it shows up
-
-| | |
-| --- | --- |
-| [Mitig8-WEB](https://github.com/franselstadt/Mitig8-WEB) | Insurance platform — this kernel over the original production shell |
-| [merced.elstadt.com](https://merced.elstadt.com) | Government operations (DDD, GASB, vendor adapters, GIS) |
-| [gallo.elstadt.com](https://gallo.elstadt.com) | Integration platform (SAP, SuccessFactors, UiPath, versioned API) |
-| [corvel.elstadt.com](https://corvel.elstadt.com) | Event-driven hub (sagas, translation layer) |
-| [BunEHR](https://github.com/franselstadt/BunEHR) | openEHR REST API v1 |
-| [TrajanOne](https://github.com/franselstadt/TrajanOne) | Case / medical-record platform |
-
-Applied in audit (US GAAP, UK IFRS, XBRL), national logistics (~1,200 trucks), payments (EMV, ISO 8583, PAIN XML), and health registries — always as domain first, adapters second.
-
----
-
 ## Stack
 
 <p align="center">
