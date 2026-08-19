@@ -1,123 +1,156 @@
 # Frans Elstadt
 
-**Systems engineer** — C# / .NET, data, and cloud backends for operational software.
+**Systems engineer** — C# / .NET, domain models, and operational backends.
 
 [Website](https://elstadt.com) · [GitHub](https://github.com/franselstadt) · [LinkedIn](https://linkedin.com/in/frans-elstadt) · [X](https://x.com/franselstadt) · [Email](mailto:franselstadt@gmail.com)
 
-I am a backend and platform engineer. I design the domain model, the persistence, the APIs, and the deployment path, then stay with the system in production. The work is usually **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware — software that other teams, banks, or field operators depend on every day.
+I build software the way a domain works, not the way a framework wants to be used. The model is the product. Persistence, HTTP, brokers, and cloud SDKs are adapters. If the domain project can see Entity Framework, the design is already wrong.
 
-The stack is typically **C# / .NET** and **SQL** (SQL Server or PostgreSQL), with REST and event-driven services (RabbitMQ, Kafka), and **AWS or Azure** underneath. On the hot path I still write and tune SQL from execution plans. Around the edges: ERP (SAP, Sage, IBM TM1), payment rails (EMV, ISO 8583, PAIN XML), and shop-floor devices (Zebra/Honeywell, scales, embedded boards).
-
-Architecturally I treat the domain as the center. Application use cases sit on top of it. Infrastructure — databases, brokers, cloud SDKs — is a plugin. If the domain project can see Entity Framework, the design is already wrong.
+The work is usually **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware. Those systems fail in the language of the business — an assessment, a wallet, a session, a settlement — so that is what the code is allowed to talk about.
 
 ---
 
-## Experience
+## How I design
 
-### Senior Software Engineer — Draftworx
-*May 2024 – March 2026*
+A screen does not open a `DbContext`. A stored procedure is not a use case. An ORM entity is not a domain object.
 
-Multi-tenant C# .NET and SQL Server audit platform supporting US GAAP, UK IFRS, and XBRL, used by firms across Europe, Africa, Australia, and the United States.
+Presentation calls **Application**. Application orchestrates **Items** and **Collections**. Architecture **composes** persistence at startup. Infrastructure implements the ports. Domain has no SQL, no UI, no cloud SDK.
 
-- Led a team of six engineers (planning, reviews, architecture, stakeholder reporting).
-- REST APIs and microservices with RabbitMQ and Kafka; API versioning for integrated clients.
-- SQL and C# performance work: execution-plan analysis, indexing, N+1 elimination, async pipeline tuning.
-- CI/CD targeting Azure or AWS from the same codebase via pipeline parameters.
-- Integrations with SAP, Sage, IBM Cognos TM1, QuickBooks, and Pastel.
-
-### Founder / Senior Software Engineer — Elstadt Industries (Mitig8)
-*April 2023 – May 2024*
-
-National multi-tenant insurance platform for insurers, brokers, and surveyors. ASP.NET and SQL Server. [Mitig8-WEB](https://github.com/franselstadt/Mitig8-WEB).
-
-- 20,000+ reports annually; integrations with major South African banks.
-- Payment stack: EMV, ISO 8583, QR wallets, PAIN XML batch settlement, reconciliation, audit trails.
-- Schema, APIs, billing, security, and production operations.
-
-### Lead Software Engineer — WAM Technology
-*November 2022 – May 2023*
-
-- South African TB / HIV national registry (government SLA, audit-grade data governance).
-- Domain-driven design across bounded contexts.
-- Farm payroll and operations, including Android Bluetooth piecework weighing and ESP32 hardware.
-- ESP32 diagnostic prototype with TensorFlow slide analysis ([Detecting_Tuberculosis_CNN](https://github.com/franselstadt/Detecting_Tuberculosis_CNN)).
-
-### Software Architect — Hatronika
-*April 2023 – May 2024 · concurrent*
-
-AWS IoT backend for a solar controller network (EC2, S3, RDS): schema, payment gateway, LoRaWAN device topology. Technical due diligence for City Venture Capital.
-
-### Staff Software Engineer — City Logistics
-*February 2016 – October 2022*
-
-Enterprise software for a 1,200-truck national logistics operation: warehouse, scanning, telematics, costing, and financial reporting.
-
-- Last-mile suite (customer tracking, dispatch, back office).
-- Zero-downtime SQL Server to PostgreSQL migration; report times to about one-third of baseline.
-- Android apps for Honeywell and Zebra PDAs; Datamax printers, industrial scales, serial hardware.
-- IBM Planning Analytics (TM1) fed from SAP and Sage VIP.
-- Multi-region CI/CD; Windows Forms to web and service-oriented architecture.
-
----
-
-## Selected work
-
-| Project | Description | Link |
-| --- | --- | --- |
-| CityOps | Government operations platform (DDD, GASB, vendor adapters, GIS, Azure Functions) | [merced.elstadt.com](https://merced.elstadt.com) |
-| Gallo Platform | .NET 10 integration demo (SAP, SuccessFactors, UiPath, Prometheus, versioned API) | [gallo.elstadt.com](https://gallo.elstadt.com) |
-| CorVel DataHub | Event-driven integration hub (sagas, Azure Functions, translation layer) | [corvel.elstadt.com](https://corvel.elstadt.com) |
-| BunEHR | EHR implementing the openEHR REST API v1 (Bun, Hono, PostgreSQL) | [BunEHR](https://github.com/franselstadt/BunEHR) |
-| Mitig8 | Insurance survey and valuation web application | [Mitig8-WEB](https://github.com/franselstadt/Mitig8-WEB) |
-| TrajanOne | Case / medical-record platform (C#) | [TrajanOne](https://github.com/franselstadt/TrajanOne) |
-| KitchenOS | C# application | [KitchenOS](https://github.com/franselstadt/KitchenOS) |
-| codebase-memory-mcp | Code intelligence MCP server | [codebase-memory-mcp](https://github.com/franselstadt/codebase-memory-mcp) |
-
----
-
-## Architecture
+```
+Presentation          pages, APIs, functions
+        │
+Application           use cases
+        │
+Domain                Items + Collections  (no I/O)
+        │
+Architecture          CompositionRoot, session, catalog
+        │
+Infrastructure        SQL, brokers, cloud
+Workers / Extensions  reports, hardware, shared helpers
+```
 
 ```mermaid
 flowchart TB
-  subgraph adapters [Infrastructure and presentation]
-    UI[Web / Functions]
-    SQL[(SQL Server / PostgreSQL)]
-    BUS[RabbitMQ / Kafka]
-    CLOUD[AWS / Azure]
+  subgraph presentation [Presentation]
+    UI[Web / API / Functions]
   end
   subgraph application [Application]
     UC[Use cases]
   end
   subgraph domain [Domain]
-    M[Entities and collections]
+    I[Items]
+    C[Collections]
+    V[ViewItems]
+  end
+  subgraph architecture [Architecture]
+    CR[CompositionRoot]
+    SC[SessionContext]
+  end
+  subgraph infrastructure [Infrastructure]
+    SQL[(SQL Server / PostgreSQL)]
+    BUS[RabbitMQ / Kafka]
+    CLOUD[AWS / Azure]
   end
   UI --> UC
-  UC --> M
-  UC -.-> SQL
+  UC --> I
+  UC --> C
+  UC --> V
+  CR -.-> I
+  CR -.-> C
+  CR --> SQL
   UC -.-> BUS
   UI -.-> CLOUD
+  SC -.-> UC
 ```
 
-Presentation and infrastructure depend on application and domain. Domain has no I/O. Brokers sit behind an application interface so RabbitMQ, Kafka, or an in-memory double can be swapped without touching business rules.
+Dependencies point inward. Domain never references Infrastructure. Architecture is the only place that wires the two together.
 
 ---
 
-## Technical skills
+## Domain: Items and Collections
+
+Persistable types inherit `BaseItem`. They are not DTOs and they are not EF entities. Each item is a thing the business names, and it owns its lifecycle:
+
+`Create` / `Read` / `Update` / `Delete` — sync and async.
+
+Sets of those things inherit `BaseCollection<T>`:
+
+`CreateItems` / `ReadItems` / `UpdateItems` / `DeleteItems` — sync and async.
+
+Shapes that never hit the database are **ViewItems** and **ViewCollections** — worklists, stats, session principals, tokens. They are still types in the domain, not anonymous projections in a controller.
+
+```
+Domain/
+  Items/
+    Base/            BaseItem
+    Interfaces/      IItem, IViewItem, IItemPersistence
+    View/            read models
+    AssessmentItem, UserItem, SessionItem, WalletItem, …
+  Collections/
+    Base/            BaseCollection<T>
+    Interfaces/      IItemCollection<T>, ICollectionPersistence
+    View/            worklists and stats
+    AssessmentCollection, UserCollection, …
+```
+
+`BaseItem.Persistence` is an interface composed at startup. The item calls `Create()`; it does not know whether that is a stored procedure, SQL, or a test double.
+
+Traditional C#: block namespaces, explicit access modifiers on every property, no top-level statements. Collections are not `ICollection<T>` — that name already belongs to the BCL.
+
+---
+
+## Application, Architecture, Infrastructure
+
+**Application** is the verb layer. `AssessmentApplication.ReadActive`, `AuthenticationApplication.IssueToken`. Screens call these. They do not call the database.
+
+**Architecture** is composition, not a dumping ground:
+
+- `CompositionRoot.Compose()` — assign item and collection persistence once, at process start
+- `SessionContext` — who is acting
+- `ModuleCatalog` / `AppSettings` — what the process is allowed to know about itself
+
+**Infrastructure** maps ports onto the real world: SQL Server / PostgreSQL, stored procedures, brokers, cloud. The EDMX, the EF context, the connection string — those live here. Domain never sees them.
+
+**Workers** run the long jobs (reports, batch settlement). **Extensions** are shared primitives, not a junk drawer.
+
+If a broker is required, it sits behind an application interface. RabbitMQ, Kafka, or an in-memory double can swap without touching a use case.
+
+SQL on the hot path is still written and tuned from execution plans. The domain does not hide that work; Infrastructure owns it.
+
+---
+
+## Why this shape
+
+Operational systems rot when every screen becomes a private database client. The next feature copies the last query. The language of the business leaks out of the code.
+
+Items keep the language. Collections keep bulk behavior. ViewItems keep queries from impersonating entities. Application keeps a use case in one place. Composition keeps I/O out of the model.
+
+Same kernel whether the host is Web Forms, Azure Functions, or a .NET 10 API. The adapters change. The domain does not.
+
+---
+
+## Where it shows up
+
+| | |
+| --- | --- |
+| [Mitig8-WEB](https://github.com/franselstadt/Mitig8-WEB) | Insurance platform — this kernel over the original production shell |
+| [merced.elstadt.com](https://merced.elstadt.com) | Government operations (DDD, GASB, vendor adapters, GIS) |
+| [gallo.elstadt.com](https://gallo.elstadt.com) | Integration platform (SAP, SuccessFactors, UiPath, versioned API) |
+| [corvel.elstadt.com](https://corvel.elstadt.com) | Event-driven hub (sagas, translation layer) |
+| [BunEHR](https://github.com/franselstadt/BunEHR) | openEHR REST API v1 |
+| [TrajanOne](https://github.com/franselstadt/TrajanOne) | Case / medical-record platform |
+
+Applied in audit (US GAAP, UK IFRS, XBRL), national logistics (~1,200 trucks), payments (EMV, ISO 8583, PAIN XML), and health registries — always as domain first, adapters second.
+
+---
+
+## Stack
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=cs,dotnet,azure,aws,postgres,sqlite,git,docker,kubernetes,linux,react,ts,nodejs" alt="skills"/>
 </p>
 
-- **Languages:** C# / .NET (ASP.NET, WPF, WinForms, Blazor), SQL, TypeScript, Java, Go, Node.js  
-- **Data:** SQL Server, PostgreSQL, AWS RDS, Cosmos DB, SQLite  
-- **Cloud:** AWS (EC2, S3, RDS, IAM, VPC), Azure (App Services, Functions), Docker, Kubernetes, Terraform  
-- **Integration:** REST, SOAP, RabbitMQ, Kafka, SAP, Sage, IBM TM1, SWIFT  
-- **Payments:** EMV, ISO 8583, PAIN XML, QR wallets  
-- **Hardware / IoT:** Zebra/Honeywell PDAs, industrial printers and scales, ESP32, STM32, Raspberry Pi, LoRaWAN  
-
-**Certifications:** AWS Networking (100th percentile) · Azure AI Fundamentals · MCSD · ASCP · IBM TM1 10.1 · CS50x · CCNA I  
-
-**Education:** B.Tech, Computer Software Engineering — Nelson Mandela University · Accounting Sciences — UNISA
+C# / .NET · SQL Server · PostgreSQL · REST · RabbitMQ · Kafka · AWS · Azure · SAP · Sage · IBM TM1 · EMV / ISO 8583 · Zebra / Honeywell / ESP32 / LoRaWAN
 
 ---
 
