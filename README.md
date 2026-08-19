@@ -6,27 +6,37 @@
 
 I am a backend and platform engineer. I design the domain model, the persistence, the APIs, and the deployment path, then stay with the system in production. The work is usually **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware — software that other teams, banks, or field operators depend on every day.
 
-I write in **statically typed** languages — C#, Java, C++. The kernel is types, interfaces, and composition. The framework is an adapter, never the model. I build software the way a domain works, not the way a framework wants to be used. Persistence, HTTP, brokers, and cloud SDKs sit outside the types that name the business. If the domain can import a driver, an ORM, or a vendor SDK, the design is already wrong.
+I write in **statically typed** languages — C#, Java, C++. Most engineers are fluent in a framework. A framework is a host with opinions. I am fluent in a model that still compiles when the host is gone.
 
 ---
 
-## Thinking
+## Most engineers, this engineer
 
-A system is a set of names the business already uses, plus the invariants those names must keep. Code that cannot say those names without opening a connection is not a model. It is a script.
+The default career is to get fast at the stack of the year. Entities are rows. Services are transaction scripts. Architecture is the folder the tutorial used. SOLID is five slides. DDD is a repository named `Repository`. That ships. It also means the business language never becomes a type, so every new host is a rewrite dressed up as a migration.
 
-I do not start from screens, tables, or frameworks. I start from the thing that would still be true if the host, the store, and the cloud all changed: a session, a ledger line, a shipment, a settlement. That thing becomes an **Item**. A set of them becomes a **Collection**. A query that is not that thing becomes a **ViewItem**. A workflow that uses them becomes a use case.
+I start from the names the business already uses. A session, a ledger line, a shipment, a settlement — that is an **Item**. A set of them is a **Collection**. A query that is not that thing is a **ViewItem**. A workflow is a use case. Persistence, HTTP, the bus, the cloud: adapters. If Domain can import a driver, an ORM, or a vendor SDK, it is not Domain. It is a second Infrastructure that someone named Domain.
 
-Those are types. In C#, Java, or C++ they are classes and interfaces (abstract classes where the language has no interface). They are not JSON, not table rows, not framework entities.
+The compiler is the design review. Substitutions that other codebases allow, this one refuses.
 
-Everything else is an adapter. Adapters are allowed to be ugly. The domain is not.
+| Default engineer | This kernel |
+| --- | --- |
+| Starts from the framework | Starts from the type |
+| ORM entity = the domain | Item = the domain; the row is an adapter |
+| Controller opens a unit of work | Presentation calls a use case; the use case never sees a connection |
+| `Repository` is a DAO with better branding | Persistence is a port **owned by Domain**, bound once |
+| DTO in the UI, row in the store, nothing the business can name | ViewItem in Domain — a query is a type, not a map |
+| Clean architecture = four folders that still import the ORM | Domain compiles with **zero** drivers |
+| SOLID as a slide deck | SOLID as a **failed build** |
+| Interface on every class | Small ports — a worklist reader does not take `Delete` |
+| One service, forty methods | One use case, one reason to change |
+| Microservices as the design | Types first; process topology is Infrastructure |
+| DI container as architecture | Composition root is **one assignment**; then the graph is closed |
+| Null persistence, catch it later | Uncomposed I/O **throws** |
+| New store: edit the model | New store: new Infrastructure |
+| Anemic objects + logic in services | Item owns `Create Read Update Delete` |
+| Framework entity passed across layers | A persistence row is not a domain type |
 
-Three refusals:
-
-- Presentation does not open a connection.
-- A stored procedure is not a use case.
-- A persistence row is not a domain type.
-
-If those three hold, the rest of the design has somewhere to live — in any framework, or in none.
+Most profiles list a stack. This one states the constraints the stack is not allowed to violate.
 
 ---
 
@@ -59,70 +69,60 @@ flowchart TB
   UI -.-> HOST[Host]
 ```
 
-Dependencies point inward. Domain never references Infrastructure. The only place a concrete store is assigned to an abstract port is the composition root. If persistence has not been composed, the process fails closed. It does not silently no-op.
+The usual codebase inverts this in practice: Domain depends on the store, Application is a folder of wrappers, Architecture is unused, Infrastructure is wherever the connection landed. Dependencies here point inward. The only concrete assignment of store → port is the composition root. If that has not run, the process fails closed.
 
-Spring, ASP.NET, Qt, a raw socket server, a batch job — those are hosts. The host can change. The store can change. The bus can change. The domain does not.
+Spring, ASP.NET, Qt, a socket server, a batch job — hosts. The host can change. The store can change. The bus can change. The domain does not.
 
 ---
 
 ## Domain kernel
 
-Persistable types inherit `BaseItem`. They are not DTOs and they are not rows. Each Item is one business name, and it owns its lifecycle:
+Persistable types inherit `BaseItem`. Not a DTO. Not a row. One business name, one lifecycle:
 
 `Create` / `Read` / `Update` / `Delete` — synchronous and asynchronous.
 
-Sets of those types inherit `BaseCollection<T>` (generics in C# and Java, templates in C++):
+Sets inherit `BaseCollection<T>` (generics in C# and Java, templates in C++):
 
-`CreateItems` / `ReadItems` / `UpdateItems` / `DeleteItems` — synchronous and asynchronous.
+`CreateItems` / `ReadItems` / `UpdateItems` / `DeleteItems`.
 
-Shapes that never hit the store are `ViewItem` and `ViewCollection<T>`: worklists, stats, principals, tokens. They live in the domain so a query cannot impersonate an entity. A ViewItem has no `Create()`. Substituting it for an Item is a type-system lie — the compiler should refuse it.
+A ViewItem has no `Create()`. If it could inherit `BaseItem`, Liskov would already be broken. The compiler should refuse the substitution other engineers make with a mapper and a comment.
 
 ```
 Domain
-  Items
-    BaseItem
-    Item, ViewItem                 interfaces / abstract classes
-    ItemPersistence                port
-    ViewItems                      read models
-  Collections
-    BaseCollection<T>
-    ItemCollection<T>              interface / abstract class
-    CollectionPersistence          port
-    ViewCollections                worklists and projections
+  Items         BaseItem · Item · ViewItem · ItemPersistence
+  Collections   BaseCollection<T> · ItemCollection<T> · CollectionPersistence
 ```
 
-The Item calls `Create()`. It does not know whether that is SQL, a procedure, a test double, or another process. `ItemPersistence` is owned by Domain. Infrastructure implements it. The composition root assigns it.
-
-Application is the verb layer. The host calls use cases. Use cases call Items and Collections. Nothing below Presentation knows there is a UI. Nothing above Infrastructure knows there is a connection.
+The Item calls `Create()`. It does not know SQL, a procedure, a test double, or another process. Domain owns the port. Infrastructure implements it. The composition root assigns it. Application is verbs. The host calls use cases. Use cases call types. Nothing below Presentation knows there is a UI. Nothing above Infrastructure knows there is a connection.
 
 ---
 
-## SOLID, as shipped
+## SOLID, as shipped — not as recited
 
-**Single responsibility.** An Item changes when the business concept changes. A use case changes when the workflow changes. An adapter changes when the store, bus, or host changes. Mixing those reasons is how a codebase becomes a private database client in every file.
+Other engineers can name the five letters. I care whether they fail the build.
 
-**Open/closed.** New stores, brokers, and hosts are new Infrastructure. Domain is not edited to add a database. Application is not edited to add a transport. The seam is the port, not a switch in a use case, and not a framework plugin hooked into the model.
+**Single responsibility.** An Item changes when the business concept changes. A use case changes when the workflow changes. An adapter changes when the store, bus, or host changes. A class that changes for all three is the default engineer’s “service layer.”
 
-**Liskov.** A ViewItem is not an Item. A bag of rows is not a Collection of Items. If a type cannot honor `Create` / `Read` / `Update` / `Delete` without cheating, it does not inherit `BaseItem`. Inheritance is a contract, not a folder.
+**Open/closed.** New store, new Infrastructure. Domain is not edited to add a database. Application is not edited to add a transport. A `switch` on vendor inside a use case is the closed-for-extension pattern dressed as pragmatism.
 
-**Interface segregation.** One-item persistence is not collection persistence. A caller that only reads a worklist does not take `Delete`. Ports are small. A fat unit-of-work in Domain is Infrastructure leaking upward.
+**Liskov.** A ViewItem is not an Item. A bag of rows is not a Collection of Items. Inheritance is a contract. If `Delete` would throw `NotSupportedException`, you modeled a query as an entity — the most common clever-looking mistake in typed codebases.
 
-**Dependency inversion.** Domain defines the abstractions. Infrastructure depends on Domain, never the reverse. Application depends on Domain. The composition root is the one concrete assignment in the process. Construction of I/O does not happen down the call stack, and it does not happen lazily inside an Item.
+**Interface segregation.** One-item persistence is not collection persistence. Callers take the port they use. A fat unit-of-work in Domain is Infrastructure that leaked upward and asked to be called architecture.
 
-The corollary is mechanical: if Domain cannot compile without a framework or a driver on the classpath (or in the include path, or in the package graph), the inversion has already failed.
+**Dependency inversion.** Domain defines abstractions. Infrastructure depends on Domain. Never the reverse. Construction of I/O does not happen down the call stack and does not happen lazily inside an Item. If Domain cannot compile without a framework or a driver on the classpath, include path, or package graph — you inverted the slide, not the dependency.
 
 ---
 
-## Constraints I keep
+## Constraints
 
-- **Types first.** The model is classes and interfaces. Dynamic maps, untyped payloads, and framework entities are not a domain.
-- **Compose once.** Persistence is bound at process start. After that, the graph is closed.
-- **Fail closed.** Uncomposed persistence throws. Silent null is a production incident waiting for traffic.
-- **Language over tables.** If the business cannot name it, it is not an Item. If it is only a join, it is a ViewItem.
-- **One use case, one entry.** A host that needs two workflows calls two application methods. It does not grow a god service.
-- **Buses behind ports.** A broker is an implementation. Any bus, or an in-memory double, swaps without touching a use case.
-- **Queries stay in Infrastructure.** Hot paths are still written and tuned. The domain does not hide that work and does not perform it.
-- **Workers own side effects that are not the model.** Reports, batches, device I/O. They use Infrastructure. They do not become methods on an Item.
-- **Explicit over implicit.** Explicit types, explicit visibility, no hidden I/O, no ambient context except session — and session is composed, not scavenged from a static.
+- **Types first.** Classes and interfaces. Dynamic maps, untyped payloads, and framework entities are not a domain.
+- **Compose once.** Bound at process start. Then the graph is closed.
+- **Fail closed.** Silent null persistence is an incident queued on the first real traffic.
+- **Name it or it is not an Item.** A join is a ViewItem.
+- **One use case, one entry.** Two workflows, two methods — not a god object with a framework annotation.
+- **Buses behind ports.** The broker is an implementation. Swap it without touching a use case.
+- **Queries stay in Infrastructure.** Hot paths are still written and tuned. Domain does not hide that work and does not perform it.
+- **Workers own side effects that are not the model.** Reports, batches, device I/O — never methods on an Item.
+- **Explicit over implicit.** Explicit types, explicit visibility, no hidden I/O, no ambient context except session, and session is composed.
 
-This is the same kernel in any language in this family, and in any host. The adapters change. The domain does not.
+Same kernel in C#, Java, or C++. Same kernel in any host. The adapters change. The domain does not. That is the difference: most engineers replace the model when they replace the framework. I replace the adapter.
