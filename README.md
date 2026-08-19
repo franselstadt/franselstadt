@@ -1,25 +1,23 @@
 # Frans Elstadt
 
-**Senior Software Engineer** · .NET, Cloud, and Backend Systems  
-California, United States · Open to remote or onsite
+**Systems engineer** — C# / .NET, data, and cloud backends for operational software.
 
 [Website](https://elstadt.com) · [GitHub](https://github.com/franselstadt) · [LinkedIn](https://linkedin.com/in/frans-elstadt) · [X](https://x.com/franselstadt) · [Email](mailto:franselstadt@gmail.com)
 
-Senior software engineer and architect with 15+ years designing, building, and operating enterprise systems in finance, payments, supply chain, insurance, audit, and public-sector programs. Work spans C# / .NET, SQL Server and PostgreSQL, REST and event-driven services, and AWS / Azure deployment.
+I am a backend and platform engineer. I design the domain model, the persistence, the APIs, and the deployment path, then stay with the system in production. The work is usually **regulated and operational**: audit, payments, insurance, logistics, health registries, industrial hardware — software that other teams, banks, or field operators depend on every day.
 
-| | | | |
-| :---: | :---: | :---: | :---: |
-| **15+ years** | **4 continents** | **1,200-truck fleet** | **20,000+ reports / year** |
-| **6-engineer team lead** | **5-bank payment integrations** | **Zero-downtime DB migration** | **AWS Networking, 100th percentile** |
+The stack is typically **C# / .NET** and **SQL** (SQL Server or PostgreSQL), with REST and event-driven services (RabbitMQ, Kafka), and **AWS or Azure** underneath. On the hot path I still write and tune SQL from execution plans. Around the edges: ERP (SAP, Sage, IBM TM1), payment rails (EMV, ISO 8583, PAIN XML), and shop-floor devices (Zebra/Honeywell, scales, embedded boards).
+
+Architecturally I treat the domain as the center. Application use cases sit on top of it. Infrastructure — databases, brokers, cloud SDKs — is a plugin. If the domain project can see Entity Framework, the design is already wrong.
 
 ---
 
 ## Experience
 
 ### Senior Software Engineer — Draftworx
-*May 2024 – March 2026 · Remote*
+*May 2024 – March 2026*
 
-Multi-tenant C# .NET and SQL Server audit platform supporting US GAAP, UK IFRS, and XBRL. Deployed across audit firms in Europe, Africa, Australia, and the United States, including banking and government tenants.
+Multi-tenant C# .NET and SQL Server audit platform supporting US GAAP, UK IFRS, and XBRL, used by firms across Europe, Africa, Australia, and the United States.
 
 - Led a team of six engineers (planning, reviews, architecture, stakeholder reporting).
 - REST APIs and microservices with RabbitMQ and Kafka; API versioning for integrated clients.
@@ -30,35 +28,35 @@ Multi-tenant C# .NET and SQL Server audit platform supporting US GAAP, UK IFRS, 
 ### Founder / Senior Software Engineer — Elstadt Industries (Mitig8)
 *April 2023 – May 2024*
 
-National multi-tenant insurance platform connecting insurers, brokers, and surveyors. ASP.NET and SQL Server. Source: [Mitig8-WEB](https://github.com/franselstadt/Mitig8-WEB).
+National multi-tenant insurance platform for insurers, brokers, and surveyors. ASP.NET and SQL Server. [Mitig8-WEB](https://github.com/franselstadt/Mitig8-WEB).
 
-- 20,000+ reports annually for Bryte, Discover, and major South African banks.
-- Payment integrations: EMV, ISO 8583, QR wallets, PAIN XML batch settlement, reconciliation, and audit trails.
-- End-to-end ownership: schema, APIs, billing, security, and production operations.
+- 20,000+ reports annually; integrations with major South African banks.
+- Payment stack: EMV, ISO 8583, QR wallets, PAIN XML batch settlement, reconciliation, audit trails.
+- Schema, APIs, billing, security, and production operations.
 
 ### Lead Software Engineer — WAM Technology
 *November 2022 – May 2023*
 
-- South African TB / HIV national registry under government SLA (audit-grade data governance).
-- Introduced domain-driven design (bounded contexts and ubiquitous language).
-- Farm payroll and operations system with Android Bluetooth piecework weighing and ESP32 hardware.
+- South African TB / HIV national registry (government SLA, audit-grade data governance).
+- Domain-driven design across bounded contexts.
+- Farm payroll and operations, including Android Bluetooth piecework weighing and ESP32 hardware.
 - ESP32 diagnostic prototype with TensorFlow slide analysis ([Detecting_Tuberculosis_CNN](https://github.com/franselstadt/Detecting_Tuberculosis_CNN)).
 
-### Software Architect — Hatronika (concurrent)
-*April 2023 – May 2024*
+### Software Architect — Hatronika
+*April 2023 – May 2024 · concurrent*
 
-AWS-hosted IoT backend for a solar controller network (EC2, S3, RDS), including schema design, payment gateway integration, and LoRaWAN device topology. Technical due diligence for City Venture Capital.
+AWS IoT backend for a solar controller network (EC2, S3, RDS): schema, payment gateway, LoRaWAN device topology. Technical due diligence for City Venture Capital.
 
 ### Staff Software Engineer — City Logistics
 *February 2016 – October 2022*
 
-Enterprise software for a 1,200-truck national logistics operation: warehouse management, scanning, telematics, costing, and financial reporting.
+Enterprise software for a 1,200-truck national logistics operation: warehouse, scanning, telematics, costing, and financial reporting.
 
 - Last-mile suite (customer tracking, dispatch, back office).
-- Zero-downtime migration from SQL Server to PostgreSQL; report times reduced to approximately one-third of baseline.
-- Android applications for Honeywell and Zebra PDA scanners; Datamax printers, industrial scales, and serial hardware.
-- IBM Planning Analytics (TM1) with SAP and Sage VIP feeds.
-- Daily multi-region CI/CD; migration from Windows Forms to web and service-oriented architecture.
+- Zero-downtime SQL Server to PostgreSQL migration; report times to about one-third of baseline.
+- Android apps for Honeywell and Zebra PDAs; Datamax printers, industrial scales, serial hardware.
+- IBM Planning Analytics (TM1) fed from SAP and Sage VIP.
+- Multi-region CI/CD; Windows Forms to web and service-oriented architecture.
 
 ---
 
@@ -78,8 +76,6 @@ Enterprise software for a 1,200-truck national logistics operation: warehouse ma
 ---
 
 ## Architecture
-
-Layered design with dependencies pointing inward: presentation and infrastructure depend on application and domain; domain has no I/O.
 
 ```mermaid
 flowchart TB
@@ -102,9 +98,7 @@ flowchart TB
   UI -.-> CLOUD
 ```
 
-- Domain-driven design; CQRS where command/query split is useful.
-- SQL written and tuned directly on hot paths (execution plans, indexing).
-- Message brokers behind an application interface so RabbitMQ, Kafka, or in-memory test doubles can be swapped.
+Presentation and infrastructure depend on application and domain. Domain has no I/O. Brokers sit behind an application interface so RabbitMQ, Kafka, or an in-memory double can be swapped without touching business rules.
 
 ---
 
@@ -127,13 +121,7 @@ flowchart TB
 
 ---
 
-## GitHub
-
 <p align="center">
   <img height="165" src="https://github-readme-stats.vercel.app/api?username=franselstadt&show_icons=true&theme=transparent&hide_border=true&include_all_commits=true" alt="GitHub stats"/>
   <img height="165" src="https://github-readme-stats.vercel.app/api/top-langs/?username=franselstadt&layout=compact&theme=transparent&hide_border=true&langs_count=8" alt="Top languages"/>
 </p>
-
----
-
-[elstadt.com](https://elstadt.com) · [LinkedIn](https://linkedin.com/in/frans-elstadt) · [X](https://x.com/franselstadt) · [franselstadt@gmail.com](mailto:franselstadt@gmail.com)
